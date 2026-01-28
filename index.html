@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STI | TPS: Sistema de Posicionamiento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Highlight.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f1f5f9; color: #1e293b; }
+        
+        /* --- STI BRANDING PALETTE --- */
+        /* Primary Blue: #1e3a8a (blue-900) */
+        /* Accent Red: #dc2626 (red-600) */
+        
+        .hero-bg { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); }
+        .tech-pattern { background-image: radial-gradient(#94a3b8 1px, transparent 1px); background-size: 24px 24px; }
+        
+        /* Animations */
+        #target-zone { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        #truck-viz { transition: left 0.1s linear; }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Navigation Buttons - STI Style */
+        .nav-btn { border-bottom: 3px solid transparent; transition: all 0.2s; color: #64748b; }
+        .nav-btn:hover { color: #1e3a8a; }
+        .nav-btn.active { border-color: #dc2626; color: #1e3a8a; background-color: white; font-weight: 800; }
+        
+        /* Effects */
+        .beam-glow { filter: drop-shadow(0 0 8px currentColor); }
+        .doc-card { transition: transform 0.2s; border-left: 4px solid transparent; }
+        .doc-card:hover { transform: translateY(-4px); border-left-color: #dc2626; }
+
+        /* Engineering LED Styles */
+        .hex-font { font-family: 'Courier New', monospace; letter-spacing: -0.5px; }
+        .led-sim-row {
+            font-family: 'Courier New', monospace;
+            border-bottom: 1px dashed #333;
+            display: flex; align-items: center; justify-content: center;
+            height: 33%; font-weight: bold; font-size: 1.5rem;
+            text-shadow: 0 0 5px currentColor;
+            transition: color 0.3s;
+        }
+        .led-sim-row:last-child { border-bottom: none; }
+        .flash-anim { animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.2; } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white sticky top-0 z-50 shadow-sm border-t-4 border-red-600">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <!-- LOGO STI OFICIAL (CSS) -->
+                    <div class="bg-white border-2 border-slate-100 px-2 py-1 rounded shadow-sm flex items-center gap-0.5 text-2xl font-black tracking-tighter select-none">
+                        <span class="text-red-600">S</span>
+                        <span class="text-blue-900">T</span>
+                        <span class="text-blue-900">i</span>
+                    </div>
+                    
+                    <div class="border-l border-slate-300 pl-3 ml-1">
+                        <h1 class="text-lg font-bold text-slate-900 leading-none">TPS <span class="font-normal text-slate-500">Project</span></h1>
+                        <p class="text-[10px] text-blue-800 font-bold uppercase tracking-widest">San Antonio Terminal</p>
+                    </div>
+                </div>
+                <div class="hidden md:flex space-x-2">
+                    <button onclick="nav('intro')" id="btn-intro" class="nav-btn active px-4 py-5 text-sm font-medium">Presentación Ejecutiva</button>
+                    <button onclick="nav('demo')" id="btn-demo" class="nav-btn px-4 py-5 text-sm font-medium flex items-center gap-2"><i class="ph ph-sliders-horizontal"></i> Simulador Operativo</button>
+                    <button onclick="nav('tech')" id="btn-tech" class="nav-btn px-4 py-5 text-sm font-medium flex items-center gap-2"><i class="ph ph-terminal-window"></i> Ingeniería Avanzada</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow bg-slate-50">
+
+        <!-- ================================================= -->
+        <!-- 1. PRESENTACIÓN -->
+        <!-- ================================================= -->
+        <section id="intro" class="fade-in">
+            <div class="hero-bg text-white py-16 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-1/3 h-full bg-white/5 skew-x-12 origin-top"></div>
+                <div class="max-w-6xl mx-auto px-4 relative z-10">
+                    <div class="inline-flex items-center gap-2 bg-blue-900/50 border border-blue-400/30 rounded-full px-4 py-1 mb-6 backdrop-blur">
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                        <span class="text-xs font-bold tracking-wider uppercase">Proyecto Activo 2026</span>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-extrabold leading-tight mb-4">Sistema de Posicionamiento de Camiones (TPS)</h1>
+                    <p class="text-blue-100 text-lg max-w-2xl">Automatización de maniobras de estiba y desestiba mediante visión artificial LiDAR y middleware robótico ROS 2.</p>
+                </div>
+            </div>
+
+            <!-- Ficha Técnica -->
+            <div class="bg-white border-b border-slate-200">
+                <div class="max-w-6xl mx-auto px-4 py-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+                    <div>
+                        <div class="text-xs font-bold text-slate-400 uppercase">Autores</div>
+                        <div class="font-semibold text-blue-900">Cristobal Farias</div>
+                        <div class="font-semibold text-blue-900">Alonso Castillo Pinto</div>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-400 uppercase">Correferentes</div>
+                        <div class="text-slate-700">Roberto Gonzalez</div>
+                        <div class="text-slate-700">Julian Tapia</div>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-400 uppercase">Lugar & Fecha</div>
+                        <div class="text-slate-700">San Antonio, Valparaíso</div>
+                        <div class="text-slate-700">Enero 2026</div>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-400 uppercase">Tecnología</div>
+                        <div class="flex gap-1 mt-1">
+                            <span class="bg-blue-50 text-blue-800 px-2 rounded border border-blue-100 text-xs font-bold">ROS 2</span>
+                            <span class="bg-red-50 text-red-800 px-2 rounded border border-red-100 text-xs font-bold">LiDAR</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenido -->
+            <div class="max-w-6xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
+                <div class="lg:col-span-2 space-y-10">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2"><i class="ph ph-warning-circle text-red-600"></i> El Desafío Operacional</h2>
+                        <p class="text-slate-600 leading-relaxed mb-4">
+                            En el dinámico entorno de <strong>San Antonio Terminal Internacional (STI)</strong>, la eficiencia de las grúas pórtico (STS) es crítica. Actualmente, el posicionamiento del camión bajo el <em>spreader</em> depende de:
+                        </p>
+                        <ul class="list-disc pl-5 space-y-2 text-slate-600">
+                            <li>Estimación visual subjetiva del operador.</li>
+                            <li>Comunicación manual (señas) desde el piso.</li>
+                            <li>Condiciones de visibilidad variables (Niebla costera, operación nocturna).</li>
+                        </ul>
+                        <div class="mt-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg text-sm text-red-900">
+                            <strong>Impacto Negativo:</strong> Esto genera tiempos muertos por re-acomodos ("micro-movimientos") y expone al personal de piso a riesgos de atropello en la zona roja.
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2"><i class="ph ph-check-circle text-blue-800"></i> La Solución TPS</h2>
+                        <p class="text-slate-600 leading-relaxed">
+                            El proyecto implementa un sistema de asistencia basado en sensores. A diferencia de las cámaras (afectadas por la luz y clima), utilizamos <strong>LiDAR 2D (SICK LMS251)</strong> para crear un "mapa de profundidad" en tiempo real.
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                            <div class="doc-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                                <h3 class="font-bold text-blue-900 text-sm mb-2">Hardware Robusto</h3>
+                                <p class="text-xs text-slate-500">Sensores con certificación IP67 diseñados para ambientes salinos y vibración de grúas.</p>
+                            </div>
+                            <div class="doc-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                                <h3 class="font-bold text-blue-900 text-sm mb-2">Lógica "Vigilante"</h3>
+                                <p class="text-xs text-slate-500">Algoritmo que valida el perfil del camión (Plana vs Portacontenedor) antes de medir la distancia.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl border-t-4 border-blue-600">
+                        <h3 class="font-bold text-lg mb-4 text-white">Resultados Esperados</h3>
+                        <ul class="space-y-4 text-sm text-slate-300">
+                            <li class="flex items-start gap-3"><i class="ph ph-trend-up text-xl text-blue-400"></i><span>Aumento de <strong>MPH</strong> (Movimientos Por Hora).</span></li>
+                            <li class="flex items-start gap-3"><i class="ph ph-shield-check text-xl text-blue-400"></i><span><strong>Cero Accidentes:</strong> Traslado posición del señalero.</span></li>
+                            <li class="flex items-start gap-3"><i class="ph ph-lightning text-xl text-blue-400"></i><span><strong>Continuidad:</strong> Operación en niebla densa.</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================= -->
+        <!-- 2. SIMULADOR OPERATIVO -->
+        <!-- ================================================= -->
+        <section id="demo" class="hidden fade-in bg-white py-10">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-slate-900 mt-3">Estacionamiento Centrado</h2>
+                    <p class="text-slate-600 mt-2 max-w-2xl mx-auto">
+                        Simulación de la lógica de alineación por arista. El rectángulo objetivo permanece centrado bajo la grúa.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    
+                    <!-- CONTROLS -->
+                    <div class="lg:col-span-3 space-y-5">
+                        <div class="bg-slate-50 p-5 rounded-xl shadow-sm border-l-4 border-red-600">
+                            <h3 class="font-bold text-slate-800 mb-3 text-sm uppercase flex items-center gap-2"><i class="ph ph-ruler text-lg text-red-600"></i> 1. Contenedor</h3>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="setSize(20)" id="btn-size-20" class="p-2 border rounded text-xs font-bold transition bg-white text-slate-600 hover:text-blue-900">20 PIES</button>
+                                <button onclick="setSize(40)" id="btn-size-40" class="p-2 border rounded text-xs font-bold transition bg-white text-slate-600 hover:text-blue-900">40 PIES</button>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-slate-800 mb-3 text-sm uppercase">2. Modo Grúa</h3>
+                            <div class="space-y-2">
+                                <button onclick="setMode('load')" id="btn-mode-load" class="w-full text-left p-2 border rounded text-xs font-bold hover:bg-slate-50">EMBARQUE</button>
+                                <button onclick="setMode('unload')" id="btn-mode-unload" class="w-full text-left p-2 border rounded text-xs font-bold hover:bg-slate-50">DESCARGA</button>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-slate-800 mb-3 text-sm uppercase">3. Tráfico</h3>
+                            <div class="flex gap-2 mb-4">
+                                <button onclick="setTruck('full')" id="btn-truck-full" class="flex-1 p-2 border rounded text-xs font-bold hover:bg-slate-50">LLENO</button>
+                                <button onclick="setTruck('empty')" id="btn-truck-empty" class="flex-1 p-2 border rounded text-xs font-bold hover:bg-slate-50">VACÍO</button>
+                            </div>
+                            <input type="range" id="simSlider" min="0" max="100" value="0" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer accent-blue-800" oninput="runLogic()">
+                        </div>
+                    </div>
+
+                    <!-- VIZ -->
+                    <div class="lg:col-span-6">
+                        <div class="bg-slate-900 rounded-2xl shadow-2xl overflow-hidden relative h-[500px] border border-slate-700 select-none">
+                            <div class="absolute inset-0 opacity-20 tech-pattern"></div>
+                            
+                            <!-- Sensors -->
+                            <div class="absolute top-12 left-[15%] flex flex-col items-center z-20">
+                                <div id="led-n" class="w-3 h-3 rounded-full bg-slate-600 mb-1"></div>
+                                <div class="bg-blue-800 text-white text-[8px] px-1.5 rounded font-bold uppercase tracking-wider">SENSOR N</div>
+                                <div id="beam-n" class="w-0.5 h-64 bg-blue-500 mt-1 opacity-0"></div>
+                            </div>
+                            <div class="absolute top-12 right-[5%] flex flex-col items-center z-20">
+                                <div id="led-s" class="w-3 h-3 rounded-full bg-slate-600 mb-1"></div>
+                                <div class="bg-red-700 text-white text-[8px] px-1.5 rounded font-bold uppercase tracking-wider">SENSOR S</div>
+                                <div id="beam-s" class="absolute top-6 right-2 w-[500px] h-[500px] bg-gradient-to-b from-red-500/10 to-transparent opacity-0 pointer-events-none origin-top-right transition-opacity duration-300" style="transform: rotate(10deg); clip-path: polygon(100% 0, 0% 100%, 100% 100%);"></div>
+                            </div>
+
+                            <!-- Target -->
+                            <div id="target-zone" class="absolute bottom-20 h-16 border-l-4 border-t-2 border-b-2 border-r-2 rounded-lg z-0 flex flex-col items-start justify-center pl-2 transition-all duration-300 box-border bg-opacity-10 border-red-500 bg-red-500/10">
+                                <div class="text-[8px] font-mono font-bold uppercase tracking-widest bg-black/60 px-1 rounded mb-1 text-white shadow-sm" id="target-text">ESPERA</div>
+                                <div class="absolute top-0 bottom-0 left-[-2px] w-1 bg-white/80 animate-pulse"></div>
+                            </div>
+
+                            <!-- Truck -->
+                            <div id="truck-viz" class="absolute bottom-20 left-0 z-10 flex flex-col items-start w-32 drop-shadow-2xl">
+                                <div class="absolute top-0 bottom-0 left-0 w-0.5 bg-yellow-400 z-30 shadow-[0_0_5px_yellow]"></div>
+                                <div id="container-viz" class="w-28 h-10 bg-blue-700 border border-blue-500 rounded-r-sm rounded-l-none mb-0.5 flex items-center justify-center text-[9px] text-white font-bold shadow-lg transition-all ml-0.5">CONTENEDOR</div>
+                                <div class="w-32 h-4 bg-slate-500 rounded-sm border-t border-slate-400 relative">
+                                    <div class="absolute -bottom-2 left-2 w-4 h-4 bg-black rounded-full border border-slate-700"></div>
+                                    <div class="absolute -bottom-2 right-4 w-4 h-4 bg-black rounded-full border border-slate-700"></div>
+                                    <div class="absolute -bottom-2 right-12 w-4 h-4 bg-black rounded-full border border-slate-700"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FEEDBACK -->
+                    <div class="lg:col-span-3 space-y-4">
+                        <div id="card-step1" class="bg-white p-4 rounded-xl border shadow-sm opacity-50 transition-all">
+                            <div class="flex justify-between items-center mb-1"><span class="text-xs font-bold text-blue-900">1. Validación (N)</span><span id="badge-n" class="text-[8px] bg-slate-100 px-2 py-0.5 rounded uppercase font-bold text-slate-400">Inactivo</span></div>
+                            <p class="text-[10px] text-slate-500">Verifica perfil al ingreso.</p>
+                        </div>
+                        <div id="card-step2" class="bg-white p-4 rounded-xl border shadow-sm opacity-50 transition-all">
+                            <div class="flex justify-between items-center mb-1"><span class="text-xs font-bold text-red-700">2. Medición (S)</span><span id="badge-s" class="text-[8px] bg-slate-100 px-2 py-0.5 rounded uppercase font-bold text-slate-400">Inactivo</span></div>
+                            <p class="text-[10px] text-slate-500">Detecta distancia restante.</p>
+                        </div>
+                        <div class="bg-black p-4 rounded-xl border-4 border-slate-700 shadow-xl relative overflow-hidden transition-colors duration-300" id="display-border">
+                            <div class="absolute top-1 left-2 text-[7px] text-slate-500 font-mono">NANHUA HMI</div>
+                            <div class="h-24 flex flex-col items-center justify-center text-center">
+                                <div id="display-icon" class="text-4xl text-slate-700 mb-2 opacity-20"><i class="ph ph-hand-palm"></i></div>
+                                <div id="display-text" class="text-3xl font-mono font-bold text-slate-700 opacity-20 transition-all">OFF</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================= -->
+        <!-- 3. INGENIERÍA AVANZADA -->
+        <!-- ================================================= -->
+        <section id="tech" class="hidden fade-in bg-white py-12">
+            <div class="max-w-7xl mx-auto px-4">
+                
+                <h2 class="text-3xl font-bold text-slate-900 mb-8 border-b pb-4">Protocolo de Comunicación Nanhua</h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    
+                    <!-- LEFT COLUMN -->
+                    <div class="lg:col-span-5 space-y-8">
+                        
+                        <!-- Memory Map -->
+                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                            <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="ph ph-map-trifold text-blue-800"></i> Mapa de Memoria (Hex)</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="text-xs font-bold text-slate-500 uppercase mb-2">Símbolos Especiales</div>
+                                    <table class="w-full text-xs text-left border-collapse">
+                                        <thead class="bg-slate-200 font-bold text-slate-700"><tr><th class="p-1 border">Hex</th><th class="p-1 border">Descripción</th></tr></thead>
+                                        <tbody class="divide-y divide-slate-200 bg-white">
+                                            <tr><td class="p-1 border font-mono text-blue-800">0xF2</td><td class="p-1 border">Flecha Arriba (⬆)</td></tr>
+                                            <tr><td class="p-1 border font-mono text-blue-800">0xF3</td><td class="p-1 border">Flecha Abajo (⬇)</td></tr>
+                                            <tr><td class="p-1 border font-mono text-blue-800">0xF0</td><td class="p-1 border">Círculo STOP (●)</td></tr>
+                                            <tr><td class="p-1 border font-mono text-blue-800">0xF1</td><td class="p-1 border">Cruz (X)</td></tr>
+                                            <tr><td class="p-1 border font-mono text-slate-400">0xFF</td><td class="p-1 border">Zona Apagada</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-bold text-slate-500 uppercase mb-2">Valores Numéricos</div>
+                                    <div class="text-xs bg-white p-2 border rounded font-mono text-blue-700">
+                                        0x00 ... 0x63 (0 a 99 Decimal)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Source Code Snippet -->
+                        <div class="bg-slate-900 rounded-xl overflow-hidden shadow-lg border border-slate-700">
+                            <div class="bg-slate-800 p-2 text-xs text-slate-400 border-b border-slate-700 flex justify-between">
+                                <span>control_hex_total_display.py</span>
+                                <span>Python 3</span>
+                            </div>
+                            <pre><code class="python text-xs" style="max-height: 250px; overflow-y: auto;"># DICCIONARIO DE SÍMBOLOS (SEGÚN PROTOCOLO PDF)
+SIMBOLOS = {
+    "NUMERO_0": 0x00,
+    "NUMERO_99": 0x63,   # 0-99 en Hex
+    "CIRCULO (STOP)": 0xF0,
+    "CRUZ (X)": 0xF1,
+    "FLECHA ARRIBA": 0xF2,
+    "FLECHA ABAJO": 0xF3,
+    "APAGADO": 0xFF
+}
+
+COLORES = { "ROJO": 0, "VERDE": 1, "AMARILLO": 2 }
+
+def calcular_checksum(data):
+    """Suma aritmética módulo 256"""
+    return sum(data) % 256
+
+def enviar_trama(sock, top, mid, bot, color_code, flash=0):
+    # Atributo = (Flash << 4) | Color
+    attr = (flash << 4) | (color_code & 0x0F)
+    
+    # Payload: [Top, Attr, Mid, Attr, Bot, Attr]
+    payload = [top, attr, mid, attr, bot, attr]
+    
+    # Cabecera (Broadcast)
+    header_addr = [0x01, 0x4E, 0xFF, 0xFF, 0xFF]
+    
+    # Trama Final
+    trama = [0xAA, 0xAA, 0x68, 0x0B, 0x0B, 0x68]
+    trama.extend(header_addr)
+    trama.extend(payload)
+    trama.append(calcular_checksum(header_addr + payload))
+    trama.append(0x16)
+    
+    return bytearray(trama)</code></pre>
+                        </div>
+
+                    </div>
+
+                    <!-- RIGHT COLUMN -->
+                    <div class="lg:col-span-7">
+                        <div class="bg-slate-900 rounded-xl border border-slate-700 p-6 shadow-2xl text-slate-300 h-full">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="font-bold text-white flex items-center gap-2"><i class="ph ph-terminal-window text-red-500"></i> Generador de Trama (Ingeniería)</h3>
+                                <div class="text-[10px] bg-slate-800 px-2 py-1 rounded border border-slate-600 font-mono">ADDR: 01 4E FF FF FF</div>
+                            </div>
+
+                            <!-- Zone Controls -->
+                            <div class="space-y-4 mb-8">
+                                <div class="grid grid-cols-12 gap-2 text-[10px] font-bold text-slate-500 uppercase">
+                                    <div class="col-span-2">Zona</div>
+                                    <div class="col-span-4">Contenido (Hex)</div>
+                                    <div class="col-span-3">Color</div>
+                                    <div class="col-span-3 text-center">Flash</div>
+                                </div>
+
+                                <div class="grid grid-cols-12 gap-2 items-center bg-slate-800/50 p-2 rounded border border-slate-700">
+                                    <div class="col-span-2 text-xs font-bold text-slate-400">SUPERIOR</div>
+                                    <div class="col-span-4"><input type="text" id="top-hex" value="F2" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 font-mono text-white text-xs uppercase" maxlength="2" onkeyup="updateTech()"></div>
+                                    <div class="col-span-3">
+                                        <select id="top-col" class="w-full bg-slate-900 border border-slate-600 rounded px-1 py-1 text-xs text-white" onchange="updateTech()">
+                                            <option value="1">Verde</option><option value="0">Rojo</option><option value="2">Amarillo</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-span-3 text-center"><input type="checkbox" id="top-flash" onchange="updateTech()"></div>
+                                </div>
+
+                                <div class="grid grid-cols-12 gap-2 items-center bg-slate-800/50 p-2 rounded border border-slate-700">
+                                    <div class="col-span-2 text-xs font-bold text-slate-400">MEDIO</div>
+                                    <div class="col-span-4"><input type="text" id="mid-hex" value="32" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 font-mono text-white text-xs uppercase" maxlength="2" onkeyup="updateTech()"></div>
+                                    <div class="col-span-3">
+                                        <select id="mid-col" class="w-full bg-slate-900 border border-slate-600 rounded px-1 py-1 text-xs text-white" onchange="updateTech()">
+                                            <option value="1">Verde</option><option value="0">Rojo</option><option value="2">Amarillo</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-span-3 text-center"><input type="checkbox" id="mid-flash" onchange="updateTech()"></div>
+                                </div>
+
+                                <div class="grid grid-cols-12 gap-2 items-center bg-slate-800/50 p-2 rounded border border-slate-700">
+                                    <div class="col-span-2 text-xs font-bold text-slate-400">INFERIOR</div>
+                                    <div class="col-span-4"><input type="text" id="bot-hex" value="F3" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 font-mono text-white text-xs uppercase" maxlength="2" onkeyup="updateTech()"></div>
+                                    <div class="col-span-3">
+                                        <select id="bot-col" class="w-full bg-slate-900 border border-slate-600 rounded px-1 py-1 text-xs text-white" onchange="updateTech()">
+                                            <option value="1">Verde</option><option value="0">Rojo</option><option value="2">Amarillo</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-span-3 text-center"><input type="checkbox" id="bot-flash" onchange="updateTech()"></div>
+                                </div>
+                            </div>
+
+                            <!-- Generated Frame -->
+                            <div class="mb-6">
+                                <label class="text-xs font-bold text-slate-500 block mb-1">TRAMA DE SALIDA (HEXADECIMAL)</label>
+                                <div class="bg-black p-3 rounded border border-blue-900/50 font-mono text-xs break-all shadow-inner">
+                                    <span class="text-slate-600 select-none">TX > </span><span id="frame-output" class="text-blue-400 font-bold">...</span>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
+                                    <span>Header (AA AA 68...)</span>
+                                    <span>Payload + Attr</span>
+                                    <span>CS + End (16)</span>
+                                </div>
+                            </div>
+
+                            <!-- Visual Preview -->
+                            <div class="bg-black border-8 border-slate-800 rounded-lg p-1 h-48 flex flex-col justify-between relative shadow-[inset_0_0_30px_rgba(0,0,0,1)]">
+                                <div class="absolute top-0 right-0 text-[8px] text-slate-600 p-1">PREVIEW</div>
+                                <div id="sim-top" class="led-sim-row text-green-500">⬆</div>
+                                <div id="sim-mid" class="led-sim-row text-green-500" style="font-size: 2rem;">50</div>
+                                <div id="sim-bot" class="led-sim-row text-green-500">⬇</div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 mt-auto text-center text-sm">
+        <p class="font-mono mb-2">STI - San Antonio Terminal Internacional | 2026</p>
+    </footer>
+
+    <!-- MAIN LOGIC -->
+    <script>
+        // --- Navigation ---
+        function nav(id) {
+            ['intro', 'demo', 'tech'].forEach(s => {
+                document.getElementById(s).classList.add('hidden');
+                document.getElementById('btn-' + s).classList.remove('active');
+                document.getElementById('btn-' + s).classList.remove('text-blue-900');
+                document.getElementById('btn-' + s).classList.remove('border-red-600');
+            });
+            document.getElementById(id).classList.remove('hidden');
+            document.getElementById('btn-' + id).classList.add('active');
+            document.getElementById('btn-' + id).classList.add('text-blue-900');
+            document.getElementById('btn-' + id).classList.add('border-red-600');
+            
+            if(id === 'demo') { updateTargetZone(); runLogic(); }
+            if(id === 'tech') { hljs.highlightAll(); updateTech(); }
+        }
+
+        // ===============================================
+        //  TECH TAB
+        // ===============================================
+        function updateTech() {
+            const zones = ['top', 'mid', 'bot'];
+            let payloadBytes = [];
+            let headerAddr = [0x01, 0x4E, 0xFF, 0xFF, 0xFF];
+
+            zones.forEach(zone => {
+                let hexStr = document.getElementById(zone + '-hex').value.toUpperCase();
+                if(hexStr.length === 0) hexStr = "00";
+                if(hexStr.length === 1) hexStr = "0" + hexStr;
+                
+                let color = parseInt(document.getElementById(zone + '-col').value);
+                let flash = document.getElementById(zone + '-flash').checked ? 1 : 0;
+                
+                let attr = (flash << 4) | (color & 0x0F);
+                let hexByte = parseInt(hexStr, 16);
+                if(isNaN(hexByte)) hexByte = 0x00;
+
+                payloadBytes.push(hexByte);
+                payloadBytes.push(attr);
+
+                updateLedRow('sim-' + zone, hexStr, color, flash);
+            });
+
+            let dataForCs = [...headerAddr, ...payloadBytes];
+            let sum = dataForCs.reduce((a, b) => a + b, 0);
+            let cs = sum % 256;
+
+            let headerStr = "AA AA 68 0B 0B 68 01 4E FF FF FF";
+            let payloadStr = payloadBytes.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+            let csStr = cs.toString(16).toUpperCase().padStart(2, '0');
+            
+            document.getElementById('frame-output').innerHTML = `${headerStr} <span class="text-white">${payloadStr}</span> <span class="text-red-500 font-bold">${csStr} 16</span>`;
+        }
+
+        function updateLedRow(elId, hex, color, flash) {
+            const el = document.getElementById(elId);
+            let content = hex;
+            if(hex === "F2") content = "⬆";
+            else if(hex === "F3") content = "⬇";
+            else if(hex === "F0") content = "●";
+            else if(hex === "F1") content = "X";
+            else if(hex === "FF") content = "";
+            else {
+                let num = parseInt(hex, 16);
+                if(!isNaN(num) && num <= 99) content = num.toString();
+            }
+            el.innerText = content;
+            if(content === "") {
+                el.style.color = "#333"; el.style.textShadow = "none";
+            } else {
+                if(color === 0) el.style.color = "#ef4444";
+                else if(color === 1) el.style.color = "#22c55e";
+                else if(color === 2) el.style.color = "#eab308";
+                el.style.textShadow = "0 0 5px currentColor";
+            }
+            if(flash) el.classList.add('flash-anim'); else el.classList.remove('flash-anim');
+        }
+
+        // ===============================================
+        //  DEMO TAB LOGIC
+        // ===============================================
+        var craneMode = 'load';
+        var truckType = 'full';
+        var containerSize = 40; 
+        
+        function setSize(s) {
+            containerSize = s;
+            const active = "p-2 border border-blue-900 bg-blue-900 text-white rounded text-xs font-bold transition";
+            const inactive = "p-2 border rounded text-xs font-bold transition bg-white text-slate-600 hover:text-blue-900";
+            document.getElementById('btn-size-20').className = s===20 ? active : inactive;
+            document.getElementById('btn-size-40').className = s===40 ? active : inactive;
+            updateTargetZone(); runLogic();
+        }
+
+        function updateTargetZone() {
+            const targetEl = document.getElementById('target-zone');
+            const width = containerSize === 40 ? 20 : 10;
+            const leftPos = 50 - (width / 2);
+            targetEl.style.width = width + "%";
+            targetEl.style.left = leftPos + "%";
+            document.getElementById('container-viz').style.width = containerSize === 40 ? "7rem" : "3.5rem"; 
+        }
+
+        function setMode(m) {
+            craneMode = m;
+            const active = "w-full text-left p-2 rounded border border-blue-900 bg-blue-900 text-white text-xs font-bold transition";
+            const inactive = "w-full text-left p-2 rounded border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold transition";
+            document.getElementById('btn-mode-load').className = m==='load' ? active : inactive;
+            document.getElementById('btn-mode-unload').className = m==='unload' ? active : inactive;
+            runLogic();
+        }
+
+        function setTruck(t) {
+            truckType = t;
+            const active = "flex-1 p-2 border border-blue-900 bg-blue-900 text-white rounded text-xs font-bold transition";
+            const inactive = "flex-1 p-2 border border-slate-200 bg-white text-slate-500 rounded text-xs font-bold transition hover:bg-slate-50";
+            document.getElementById('btn-truck-full').className = t==='full' ? active : inactive;
+            document.getElementById('btn-truck-empty').className = t==='empty' ? active : inactive;
+            document.getElementById('container-viz').style.opacity = t==='full' ? 1 : 0;
+            runLogic();
+        }
+
+        function runLogic() {
+            const pos = parseInt(document.getElementById('simSlider').value);
+            const truckViz = document.getElementById('truck-viz');
+            truckViz.style.left = pos + "%";
+
+            // NORTH ZONE (15-35)
+            const northZone = (pos > 15 && pos < 40);
+            const beamN = document.getElementById('beam-n');
+            const ledN = document.getElementById('led-n');
+            const cardN = document.getElementById('card-step1');
+            const badgeN = document.getElementById('badge-n');
+
+            if (northZone) {
+                beamN.style.opacity = 1;
+                cardN.classList.remove('opacity-50');
+                cardN.style.borderLeftColor = "#1e3a8a"; // Blue-900
+                
+                const logicOK = (craneMode === 'load' && truckType === 'full') || (craneMode === 'unload' && truckType === 'empty');
+                if(logicOK) {
+                    ledN.className = "w-3 h-3 rounded-full bg-blue-600 mb-1 shadow-[0_0_10px_#2563eb]";
+                    beamN.className = "w-0.5 h-64 bg-blue-600 mt-1 shadow-[0_0_15px_#2563eb]";
+                    badgeN.innerText = "PERFIL OK"; badgeN.className = "text-[8px] bg-blue-100 px-2 py-0.5 rounded uppercase font-bold text-blue-900";
+                } else {
+                    ledN.className = "w-3 h-3 rounded-full bg-red-600 mb-1 shadow-[0_0_10px_#dc2626]";
+                    beamN.className = "w-0.5 h-64 bg-red-600 mt-1 shadow-[0_0_15px_#dc2626]";
+                    badgeN.innerText = "ERROR PERFIL"; badgeN.className = "text-[8px] bg-red-100 px-2 py-0.5 rounded uppercase font-bold text-red-900";
+                }
+            } else {
+                beamN.style.opacity = 0;
+                cardN.classList.add('opacity-50');
+                cardN.style.borderLeftColor = "transparent";
+                ledN.className = "w-3 h-3 rounded-full bg-slate-600 mb-1";
+                badgeN.innerText = "Inactivo"; badgeN.className = "text-[8px] bg-slate-100 px-2 py-0.5 rounded uppercase font-bold text-slate-400";
+            }
+
+            // SOUTH ZONE (>30)
+            const southActive = (pos >= 30);
+            const beamS = document.getElementById('beam-s');
+            const ledS = document.getElementById('led-s');
+            const cardS = document.getElementById('card-step2');
+            const badgeS = document.getElementById('badge-s');
+            const targetZone = document.getElementById('target-zone');
+            const targetText = document.getElementById('target-text');
+            const displayBorder = document.getElementById('display-border');
+            const displayIcon = document.getElementById('display-icon');
+            const displayText = document.getElementById('display-text');
+
+            if (southActive) {
+                const logicOK = (craneMode === 'load' && truckType === 'full') || (craneMode === 'unload' && truckType === 'empty');
+                if (logicOK) {
+                    beamS.style.opacity = 1;
+                    cardS.classList.remove('opacity-50');
+                    cardS.style.borderLeftColor = "#dc2626"; // Red
+                    ledS.className = "w-3 h-3 rounded-full bg-red-600 mb-1 shadow-[0_0_10px_#dc2626]";
+                    badgeS.innerText = "TRACKING"; badgeS.className = "text-[8px] bg-red-100 px-2 py-0.5 rounded uppercase font-bold text-red-900";
+
+                    const width = containerSize === 40 ? 20 : 10;
+                    const targetLeftEdge = 50 - (width / 2);
+                    const diff = targetLeftEdge - pos;
+                    const meters = diff / 2.5;
+
+                    displayIcon.classList.remove('opacity-20'); displayText.classList.remove('opacity-20');
+
+                    if (Math.abs(meters) < 0.5) {
+                        targetZone.className = "absolute bottom-16 h-16 border-l-4 border-t-2 border-b-2 border-r-2 rounded-lg z-0 flex flex-col items-start justify-center pl-2 transition-colors duration-300 box-border border-green-500 bg-green-500/20";
+                        targetText.innerText = "LISTO"; targetText.className = "text-[8px] font-bold uppercase tracking-widest bg-black/60 px-1 rounded mb-1 text-green-500";
+                        displayBorder.className = "bg-black p-4 rounded-xl border-4 border-red-600 relative overflow-hidden";
+                        displayIcon.className = "text-4xl text-red-500 mb-2"; displayIcon.innerHTML = '<i class="ph ph-hand-palm"></i>';
+                        displayText.className = "text-3xl font-mono font-bold text-red-500"; displayText.innerText = "STOP";
+                    } else {
+                        targetZone.className = "absolute bottom-16 h-16 border-l-4 border-t-2 border-b-2 border-r-2 rounded-lg z-0 flex flex-col items-start justify-center pl-2 transition-colors duration-300 box-border border-yellow-500 bg-yellow-500/10";
+                        targetText.innerText = "AJUSTANDO"; targetText.className = "text-[8px] font-bold uppercase tracking-widest bg-black/60 px-1 rounded mb-1 text-yellow-500";
+                        displayBorder.className = "bg-black p-4 rounded-xl border-4 border-green-500 relative overflow-hidden";
+                        displayIcon.className = "text-4xl text-green-500 mb-2"; displayIcon.innerHTML = meters>0 ? '<i class="ph ph-arrow-right"></i>' : '<i class="ph ph-arrow-left"></i>';
+                        displayText.className = "text-3xl font-mono font-bold text-green-500"; displayText.innerText = Math.abs(meters).toFixed(1) + "m";
+                    }
+                } else {
+                    beamS.style.opacity = 0; ledS.className = "w-3 h-3 rounded-full bg-slate-600 mb-1";
+                    cardS.classList.add('opacity-50'); cardS.style.borderLeftColor = "transparent";
+                    displayBorder.className = "bg-black p-4 rounded-xl border-4 border-slate-700 shadow-none";
+                    displayIcon.classList.add('opacity-20'); displayText.classList.add('opacity-20'); displayText.innerText = "BLOQ";
+                    badgeS.innerText = "Inactivo"; badgeS.className = "text-[8px] bg-slate-100 px-2 py-0.5 rounded uppercase font-bold text-slate-400";
+                    targetZone.className = "absolute bottom-16 h-16 border-l-4 border-t-2 border-b-2 border-r-2 rounded-lg z-0 flex flex-col items-start justify-center pl-2 transition-colors duration-300 box-border border-red-500 bg-red-500/10";
+                    targetText.innerText = "ESPERA"; targetText.className = "text-[8px] font-bold uppercase tracking-widest bg-black/60 px-1 rounded mb-1 text-red-500";
+                }
+            } else {
+                beamS.style.opacity = 0; ledS.className = "w-3 h-3 rounded-full bg-slate-600 mb-1";
+                cardS.classList.add('opacity-50'); cardS.style.borderLeftColor = "transparent";
+                badgeS.innerText = "Inactivo"; badgeS.className = "text-[8px] bg-slate-100 px-2 py-0.5 rounded uppercase font-bold text-slate-400";
+                if(!northZone) {
+                    displayBorder.className = "bg-black p-4 rounded-xl border-4 border-slate-700 shadow-none";
+                    displayIcon.classList.add('opacity-20'); displayText.classList.add('opacity-20'); displayText.innerText = "ESPERA";
+                }
+                targetZone.className = "absolute bottom-16 h-16 border-l-4 border-t-2 border-b-2 border-r-2 rounded-lg z-0 flex flex-col items-start justify-center pl-2 transition-colors duration-300 box-border border-red-500 bg-red-500/10";
+                targetText.innerText = "ESPERA"; targetText.className = "text-[8px] font-bold uppercase tracking-widest bg-black/60 px-1 rounded mb-1 text-red-500";
+            }
+        }
+
+        window.onload = () => { setSize(40); updateTech(); };
+    </script>
+</body>
+</html>
